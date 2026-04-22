@@ -20,7 +20,10 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public List<Expense> getAll() {
+    public List<Expense> getAll(@RequestParam(required = false) Long userId) {
+        if (userId != null) {
+            return repo.findByUserIdOrderByIdDesc(userId);
+        }
         return repo.findAll();
     }
 }

@@ -1,64 +1,133 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expense Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <header class="site-header">
+        <div class="site-header__inner">
+            <div class="brand" title="Expense Tracker">
+                <span class="brand__icon" aria-hidden="true">◆</span>
+                <div class="brand__text">
+                    <span class="brand__name">ExpenseTracker</span>
+                    <span class="brand__tagline">Simple spending for your project</span>
+                </div>
+            </div>
+            <nav class="nav" aria-label="Sections">
+                <button type="button" class="nav-btn active" data-section="expense">Add expense</button>
+                <button type="button" class="nav-btn" data-section="table">View expenses</button>
+                <button type="button" class="nav-btn" data-section="category">Categories</button>
+                <button type="button" class="nav-btn" data-section="budget">Budget</button>
+            </nav>
+        </div>
+    </header>
 
-<div class="navbar">
-    <div class="logo">ExpenseTracker</div>
-    <div class="nav-links">
-        <button onclick="showSection('expense')">Add Expense</button>
-        <button onclick="showSection('table')">View Expenses</button>
-        <button onclick="showSection('category')">Categories</button>
-        <button onclick="showSection('budget')">Budget</button>
-    </div>
-</div>
+    <main class="page">
+        <div class="page__intro">
+            <h1 class="page__title">Your money, organized</h1>
+            <p class="page__subtitle">Add categories, log expenses, and set monthly budgets — all in one place.</p>
+        </div>
 
-<div class="container">
+        <div class="container">
+            <div id="expense" class="card">
+                <div class="card__head">
+                    <h2 class="card__title">Add expense</h2>
+                    <p class="card__desc">Record what you spent and when.</p>
+                </div>
+                <p class="callout">Demo user id is <strong>1</strong> — records are stored for this user only.</p>
+                <div class="field">
+                    <label for="amount">Amount (₹)</label>
+                    <input id="amount" type="number" min="0" step="0.01" placeholder="0.00" inputmode="decimal" required>
+                </div>
+                <div class="field">
+                    <label for="desc">Description</label>
+                    <input id="desc" type="text" placeholder="Lunch, books, transport…" autocomplete="off">
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="expenseDate">Date</label>
+                        <input id="expenseDate" type="date" required>
+                    </div>
+                    <div class="field">
+                        <label for="categorySelect">Category</label>
+                        <select id="categorySelect" required>
+                            <option value="">— Add a category first —</option>
+                        </select>
+                    </div>
+                </div>
+                <p id="expense-total" class="total-line" aria-live="polite"></p>
+                <button type="button" class="btn btn--primary" onclick="addExpense()">Save expense</button>
+                <p id="message" class="message" role="status"></p>
+            </div>
 
-    ```
-    <div id="expense" class="card">
-        <h3>Add Expense</h3>
-        <input id="amount" placeholder="Amount">
-        <input id="desc" placeholder="Description">
-        <button onclick="addExpense()">Add</button>
-        <p id="message"></p>
-    </div>
+            <div id="table" class="card card--wide hidden">
+                <div class="card__head">
+                    <h2 class="card__title">Your expenses</h2>
+                    <p class="card__desc">Newest first. Amounts in Indian rupees (₹).</p>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseTable"></tbody>
+                    </table>
+                </div>
+            </div>
 
-    <div id="table" class="card hidden">
-        <h3>All Expenses</h3>
-        <table>
-            <thead>
-            <tr>
-                <th>Amount</th>
-                <th>Description</th>
-            </tr>
-            </thead>
-            <tbody id="expenseTable"></tbody>
-        </table>
-    </div>
+            <div id="category" class="card card--wide hidden">
+                <div class="card__head">
+                    <h2 class="card__title">Categories</h2>
+                    <p class="card__desc">Group expenses (e.g. Food, Travel) before you add spending.</p>
+                </div>
+                <div class="row">
+                    <div class="field field--grow">
+                        <label for="catName">New category name</label>
+                        <input id="catName" type="text" placeholder="e.g. Food, Stationery" autocomplete="off">
+                    </div>
+                    <div class="row-action">
+                        <button type="button" class="btn btn--secondary" onclick="addCategory()">Add category</button>
+                    </div>
+                </div>
+                <h3 class="list-heading">Your categories</h3>
+                <ul id="categoryList" class="pill-list"></ul>
+            </div>
 
-    <div id="category" class="card hidden">
-        <h3>Add Category</h3>
-        <input id="catName">
-        <button onclick="addCategory()">Add</button>
-    </div>
+            <div id="budget" class="card card--wide hidden">
+                <div class="card__head">
+                    <h2 class="card__title">Monthly budget</h2>
+                    <p class="card__desc">Set a target amount for any month to track against spending.</p>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label for="month">Month</label>
+                        <input id="month" type="month" required>
+                    </div>
+                    <div class="field">
+                        <label for="budgetAmount">Amount (₹)</label>
+                        <input id="budgetAmount" type="number" min="0" step="0.01" placeholder="0.00" inputmode="decimal" required>
+                    </div>
+                    <div class="row-action">
+                        <button type="button" class="btn btn--primary" onclick="addBudget()">Save budget</button>
+                    </div>
+                </div>
+                <h3 class="list-heading">Saved budgets</h3>
+                <ul id="budgetList" class="data-list data-list--boxed"></ul>
+            </div>
+        </div>
+    </main>
 
-    <div id="budget" class="card hidden">
-        <h3>Set Budget</h3>
-        <input id="month">
-        <input id="budgetAmount">
-        <button onclick="addBudget()">Save</button>
-    </div>
-    ```
-
-</div>
-
-<script src="app.js"></script>
-
+    <script src="app.js"></script>
 </body>
 </html>

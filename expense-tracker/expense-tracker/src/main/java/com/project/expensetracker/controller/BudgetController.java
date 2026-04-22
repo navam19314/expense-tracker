@@ -20,7 +20,10 @@ public class BudgetController {
     }
 
     @GetMapping
-    public List<Budget> getAll() {
+    public List<Budget> getAll(@RequestParam(required = false) Long userId) {
+        if (userId != null) {
+            return repo.findByUserIdOrderByIdDesc(userId);
+        }
         return repo.findAll();
     }
 }

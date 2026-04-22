@@ -20,7 +20,10 @@ public class CategoryController {
     }
 
     @GetMapping
-    public List<Category> getAll() {
+    public List<Category> getAll(@RequestParam(required = false) Long userId) {
+        if (userId != null) {
+            return repo.findByUserIdOrderByNameAsc(userId);
+        }
         return repo.findAll();
     }
 }
