@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="navbar">
+    <div class="logo">ExpenseTracker</div>
+    <div class="nav-links">
+        <button onclick="showSection('expense')">Add Expense</button>
+        <button onclick="showSection('table')">View Expenses</button>
+        <button onclick="showSection('category')">Categories</button>
+        <button onclick="showSection('budget')">Budget</button>
+    </div>
+</div>
+
+<div class="container">
+
+    ```
+    <div id="expense" class="card">
+        <h3>Add Expense</h3>
+        <input id="amount" placeholder="Amount">
+        <input id="desc" placeholder="Description">
+        <button onclick="addExpense()">Add</button>
+        <p id="message"></p>
+    </div>
+
+    <div id="table" class="card hidden">
+        <h3>All Expenses</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Description</th>
+            </tr>
+            </thead>
+            <tbody id="expenseTable"></tbody>
+        </table>
+    </div>
+
+    <div id="category" class="card hidden">
+        <h3>Add Category</h3>
+        <input id="catName">
+        <button onclick="addCategory()">Add</button>
+    </div>
+
+    <div id="budget" class="card hidden">
+        <h3>Set Budget</h3>
+        <input id="month">
+        <input id="budgetAmount">
+        <button onclick="addBudget()">Save</button>
+    </div>
+    ```
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

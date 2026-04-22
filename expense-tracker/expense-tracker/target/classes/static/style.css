@@ -1,0 +1,60 @@
+body {
+margin: 0;
+font-family: sans-serif;
+background: #f9fafb;
+}
+
+.navbar {
+display: flex;
+justify-content: space-between;
+padding: 15px 40px;
+background: white;
+border-bottom: 1px solid #ddd;
+}
+
+.nav-links {
+display: flex;
+gap: 20px;
+}
+
+.nav-links button {
+background: none;
+border: none;
+cursor: pointer;
+}
+
+.container {
+display: flex;
+justify-content: center;
+margin-top: 40px;
+}
+
+.card {
+width: 350px;
+padding: 20px;
+background: white;
+border: 1px solid #ddd;
+}
+
+input {
+width: 100%;
+padding: 10px;
+margin: 8px 0;
+}
+
+button {
+padding: 10px;
+width: 100%;
+background: black;
+color: white;
+border: none;
+}
+
+.hidden {
+display: none;
+}
+
+table {
+width: 100%;
+margin-top: 10px;
+}
