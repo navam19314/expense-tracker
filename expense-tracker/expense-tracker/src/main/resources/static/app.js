@@ -87,12 +87,13 @@ function refreshCategories() {
 
 function addExpense() {
     const messageEl = document.getElementById("message");
-    const amount = parseFloat(document.getElementById("amount").value);
+    const amountRaw = document.getElementById("amount").value.trim().replace(/,/g, "");
+    const amount = parseFloat(amountRaw);
     const desc = document.getElementById("desc").value.trim();
     const date = document.getElementById("expenseDate").value;
     const categoryId = document.getElementById("categorySelect").value;
-    if (!date || !categoryId || Number.isNaN(amount) || amount < 0) {
-        showMessage(messageEl, "Fill amount, date, and category.", true);
+    if (!date || !categoryId || amountRaw === "" || Number.isNaN(amount) || amount < 0) {
+        showMessage(messageEl, "Enter a valid amount, date, and category.", true);
         return;
     }
     fetch("/api/expenses", {
@@ -219,7 +220,8 @@ function loadCategoryList() {
 
 function addBudget() {
     const month = document.getElementById("month").value;
-    const amount = parseFloat(document.getElementById("budgetAmount").value);
+    const amountRaw = document.getElementById("budgetAmount").value.trim().replace(/,/g, "");
+    const amount = parseFloat(amountRaw);
     if (!month || Number.isNaN(amount) || amount < 0) {
         alert("Set month and a valid amount.");
         return;
