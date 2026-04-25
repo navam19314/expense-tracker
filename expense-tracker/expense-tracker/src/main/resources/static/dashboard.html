@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-shell">
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="brand-wrap">
+                <div class="brand-icon">₹</div>
+                <div>
+                    <p class="brand-title">Expense AI</p>
+                    <p class="brand-sub">Future finance suite</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-link active" href="/dashboard.html">Dashboard</a>
+                <a class="nav-link" href="/expenses.html">Add Expense</a>
+                <a class="nav-link" href="/history.html">Expense History</a>
+                <a class="nav-link" href="/categories.html">Categories</a>
+                <a class="nav-link" href="/budget.html">Budget Planner</a>
+            </nav>
+            <div class="sidebar-foot">
+                <p class="muted" data-user-email></p>
+                <button class="btn btn-secondary" data-logout>Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-panel">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <p class="topbar-kicker">Control Center</p>
+                    <h2>Financial Dashboard</h2>
+                </div>
+                <span class="status-chip">Live sync</span>
+            </header>
+
+            <div id="warningBanner" class="warning-banner hidden"></div>
+
+            <section class="section-card">
+                <div class="section-head">
+                    <h3>Dashboard</h3>
+                    <p class="muted">Realtime overview of money flow, budget utilization, and category analytics.</p>
+                </div>
+                <div class="row cards-4">
+                    <article class="summary-card">
+                        <p>Total Expenses</p>
+                        <h3 id="totalExpenseCard">₹0.00</h3>
+                    </article>
+                    <article class="summary-card">
+                        <p>Budget</p>
+                        <h3 id="budgetCard">₹0.00</h3>
+                    </article>
+                    <article class="summary-card">
+                        <p>Remaining</p>
+                        <h3 id="remainingCard">₹0.00</h3>
+                    </article>
+                    <article class="summary-card">
+                        <p>Usage</p>
+                        <h3 id="usagePercent">0%</h3>
+                    </article>
+                </div>
+                <div class="progress-wrap">
+                    <label for="monthFilter">Monthly view</label>
+                    <input id="monthFilter" type="month">
+                    <div class="progress-bar">
+                        <div id="usageProgress" class="progress-fill"></div>
+                    </div>
+                </div>
+                <div class="row charts-row">
+                    <article class="chart-card">
+                        <h4>Category Distribution</h4>
+                        <canvas id="pieChart"></canvas>
+                    </article>
+                    <article class="chart-card">
+                        <h4>Category vs Amount</h4>
+                        <canvas id="barChart"></canvas>
+                    </article>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app-common.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

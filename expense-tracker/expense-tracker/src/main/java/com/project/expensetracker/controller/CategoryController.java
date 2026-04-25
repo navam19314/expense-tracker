@@ -1,8 +1,10 @@
 package com.project.expensetracker.controller;
 
-import com.project.expensetracker.model.Category;
-import com.project.expensetracker.repository.CategoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.project.expensetracker.dto.request.CategoryRequest;
+import com.project.expensetracker.dto.response.CategoryResponse;
+import com.project.expensetracker.service.CategoryService;
+import com.project.expensetracker.service.SessionUserService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,20 +12,23 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
+    private final CategoryService categoryService;
+    private final SessionUserService sessionUserService;
 
-    @Autowired
-    private CategoryRepository repo;
+    public CategoryController(CategoryService categoryService, SessionUserService sessionUserService) {
+        this.categoryService = categoryService;
+        this.sessionUserService = sessionUserService;
+    }
 
     @PostMapping
-    public Category add(@RequestBody Category c) {
-        return repo.save(c);
+    public CategoryResponse add(@RequestBody CategoryRequest request, HttpSession session) {
+        Long userId = sessionUserService.getRequiredUserId(session);
+        return categoryService.add(userId, request);
     }
 
     @GetMapping
-    public List<Category> getAll(@RequestParam(required = false) Long userId) {
-        if (userId != null) {
-            return repo.findByUserIdOrderByNameAsc(userId);
-        }
-        return repo.findAll();
+    public List<CategoryResponse> getAll(HttpSession session) {
+        Long userId = sessionUserService.getRequiredUserId(session);
+        return categoryService.list(userId);
     }
 }

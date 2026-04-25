@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro - Budget</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page-shell">
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="brand-wrap">
+                <div class="brand-icon">₹</div>
+                <div>
+                    <p class="brand-title">Expense AI</p>
+                    <p class="brand-sub">Future finance suite</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="nav-link" href="/dashboard.html">Dashboard</a>
+                <a class="nav-link" href="/expenses.html">Add Expense</a>
+                <a class="nav-link" href="/history.html">Expense History</a>
+                <a class="nav-link" href="/categories.html">Categories</a>
+                <a class="nav-link active" href="/budget.html">Budget Planner</a>
+            </nav>
+            <div class="sidebar-foot">
+                <p class="muted" data-user-email></p>
+                <button class="btn btn-secondary" data-logout>Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-panel">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <p class="topbar-kicker">Planning</p>
+                    <h2>Budget Planner</h2>
+                </div>
+                <span class="status-chip">Monthly targets</span>
+            </header>
+
+            <section class="section-card">
+                <div class="section-head">
+                    <h3>Set Monthly Budget</h3>
+                    <p class="muted">Define budget caps and compare against actual spends.</p>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>Month</label>
+                        <input id="budgetMonth" type="month">
+                    </div>
+                    <div class="field">
+                        <label>Amount (₹)</label>
+                        <input id="budgetAmount" type="number" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="field action-field">
+                        <button class="btn btn-primary" id="saveBudgetBtn">Save Budget</button>
+                    </div>
+                </div>
+                <ul id="budgetList" class="list-box"></ul>
+            </section>
+        </main>
+    </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="app-common.js"></script>
+<script src="budget.js"></script>
+</body>
+</html>

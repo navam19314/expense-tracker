@@ -1,268 +1,298 @@
-const userId = 1;
-let categoryById = {};
+let pieChart;
+let barChart;
 
-function showMessage(el, text, isError) {
-    el.textContent = text;
-    el.classList.toggle("message-error", Boolean(isError));
-    if (text) {
-        setTimeout(() => {
-            el.textContent = "";
-            el.classList.remove("message-error");
-        }, 5000);
+const authSection = document.getElementById("authSection");
+const appSection = document.getElementById("appSection");
+const authMessage = document.getElementById("authMessage");
+const warningBanner = document.getElementById("warningBanner");
+
+function currentMonth() {
+    return new Date().toISOString().slice(0, 7);
+}
+
+function showToast(text) {
+    const toast = document.getElementById("toast");
+    toast.textContent = text;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 2500);
+}
+
+function money(value) {
+    return `₹${Number(value || 0).toFixed(2)}`;
+}
+
+async function api(url, options = {}) {
+    const response = await fetch(url, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options,
+    });
+    if (!response.ok) {
+        let errorText = "Request failed";
+        try {
+            const payload = await response.json();
+            errorText = payload.message || errorText;
+        } catch (_) {
+            errorText = await response.text();
+        }
+        throw new Error(errorText);
+    }
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
+}
+
+async function login() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    try {
+        const data = await api("/api/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+        });
+        authMessage.textContent = "";
+        openApp(data.email);
+        showToast("Login successful");
+    } catch (err) {
+        authMessage.textContent = err.message;
     }
 }
 
-function showSection(section) {
-    const ids = ["expense", "table", "category", "budget"];
+async function register() {
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value.trim();
+    try {
+        const data = await api("/api/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+        });
+        authMessage.textContent = "";
+        openApp(data.email);
+        showToast("Registration successful");
+    } catch (err) {
+        authMessage.textContent = err.message;
+    }
+}
+
+async function logout() {
+    await api("/api/auth/logout", { method: "POST" });
+    appSection.classList.add("hidden");
+    authSection.classList.remove("hidden");
+}
+
+async function checkSession() {
+    try {
+        const me = await api("/api/auth/me");
+        openApp(me.email);
+    } catch (_) {
+        appSection.classList.add("hidden");
+        authSection.classList.remove("hidden");
+    }
+}
+
+function openApp(email) {
+    authSection.classList.add("hidden");
+    appSection.classList.remove("hidden");
+    document.getElementById("welcomeText").textContent = `Logged in as ${email}`;
+    document.getElementById("expenseDate").value = new Date().toISOString().slice(0, 10);
+    document.getElementById("budgetMonth").value = currentMonth();
+    refreshAll();
+}
+
+function switchSection(sectionId) {
+    const ids = ["dashboardSection", "expenseSection", "historySection", "categorySection", "budgetSection"];
     ids.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.classList.toggle("hidden", id !== section);
+        document.getElementById(id).classList.toggle("hidden", id !== sectionId);
     });
-    document.querySelectorAll(".nav-btn").forEach((btn) => {
-        btn.classList.toggle("active", btn.dataset.section === section);
+    document.querySelectorAll(".nav-link").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.section === sectionId);
     });
-    if (section === "table") {
-        loadTable();
-    } else if (section === "category") {
-        loadCategoryList();
-    } else if (section === "budget") {
-        loadBudgetList();
-    } else if (section === "expense") {
-        updateExpenseTotalPreview();
-    }
+    if (sectionId === "historySection") loadExpenses();
+    if (sectionId === "categorySection") loadCategories();
+    if (sectionId === "budgetSection") loadBudgets();
+    if (sectionId === "dashboardSection") loadDashboard();
 }
 
-document.querySelectorAll(".nav-btn").forEach((btn) => {
-    btn.addEventListener("click", () => showSection(btn.dataset.section));
-});
-
-function setDefaultDate() {
-    const d = new Date();
-    const iso = d.toISOString().slice(0, 10);
-    document.getElementById("expenseDate").value = iso;
-}
-
-function setDefaultMonth() {
-    const d = new Date();
-    const ym = d.toISOString().slice(0, 7);
-    document.getElementById("month").value = ym;
-}
-
-function refreshCategories() {
-    return fetch(`/api/categories?userId=${userId}`)
-        .then((res) => res.json())
-        .then((data) => {
-            categoryById = {};
-            data.forEach((c) => {
-                categoryById[c.id] = c.name;
-            });
-            const sel = document.getElementById("categorySelect");
-            const prev = sel.value;
-            sel.innerHTML = "";
-            if (data.length === 0) {
-                const o = document.createElement("option");
-                o.value = "";
-                o.textContent = "— Add a category first —";
-                sel.appendChild(o);
-                return;
-            }
-            const placeholder = document.createElement("option");
-            placeholder.value = "";
-            placeholder.textContent = "Select category";
-            sel.appendChild(placeholder);
-            data.forEach((c) => {
-                const o = document.createElement("option");
-                o.value = c.id;
-                o.textContent = c.name;
-                sel.appendChild(o);
-            });
-            if (prev && data.some((c) => String(c.id) === String(prev))) {
-                sel.value = prev;
-            }
-        })
-        .catch(() => {
-            showMessage(document.getElementById("message"), "Could not load categories. Is the server running?", true);
-        });
-}
-
-function addExpense() {
-    const messageEl = document.getElementById("message");
-    const amountRaw = document.getElementById("amount").value.trim().replace(/,/g, "");
-    const amount = parseFloat(amountRaw);
-    const desc = document.getElementById("desc").value.trim();
+async function addExpense() {
+    const amount = Number(document.getElementById("amount").value);
     const date = document.getElementById("expenseDate").value;
-    const categoryId = document.getElementById("categorySelect").value;
-    if (!date || !categoryId || amountRaw === "" || Number.isNaN(amount) || amount < 0) {
-        showMessage(messageEl, "Enter a valid amount, date, and category.", true);
-        return;
-    }
-    fetch("/api/expenses", {
+    const categoryId = Number(document.getElementById("categorySelect").value);
+    const description = document.getElementById("description").value.trim();
+    await api("/api/expenses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            amount,
-            description: desc || "—",
-            date,
-            userId,
-            categoryId: Number(categoryId),
-        }),
-    })
-        .then((res) => {
-            if (!res.ok) throw new Error("Save failed");
-            return res.json();
-        })
-        .then(() => {
-            showMessage(messageEl, "Expense saved.");
-            document.getElementById("amount").value = "";
-            document.getElementById("desc").value = "";
-            setDefaultDate();
-            updateExpenseTotalPreview();
-        })
-        .catch(() => showMessage(messageEl, "Could not save expense.", true));
+        body: JSON.stringify({ amount, date, categoryId, description }),
+    });
+    document.getElementById("amount").value = "";
+    document.getElementById("description").value = "";
+    showToast("Expense saved");
+    refreshAll();
 }
 
-function categoryLabel(id) {
-    if (id == null) return "—";
-    return categoryById[id] || `#${id}`;
+async function addCategory() {
+    const name = document.getElementById("categoryName").value.trim();
+    await api("/api/categories", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+    });
+    document.getElementById("categoryName").value = "";
+    showToast("Category added");
+    await loadCategories();
 }
 
-function updateExpenseTotalPreview() {
-    fetch(`/api/expenses?userId=${userId}`)
-        .then((r) => r.json())
-        .then((data) => {
-            const total = data.reduce((s, e) => s + (e.amount || 0), 0);
-            const el = document.getElementById("expense-total");
-            el.textContent =
-                data.length > 0
-                    ? `You have ${data.length} expense(s) on record. Total: ₹${total.toFixed(2)}`
-                    : "No expenses yet. Add your first one above.";
-        });
+async function saveBudget() {
+    const month = document.getElementById("budgetMonth").value;
+    const amount = Number(document.getElementById("budgetAmount").value);
+    await api("/api/budget", {
+        method: "POST",
+        body: JSON.stringify({ month, amount }),
+    });
+    document.getElementById("budgetAmount").value = "";
+    showToast("Budget saved");
+    await refreshAll();
 }
 
-function loadTable() {
-    const table = document.getElementById("expenseTable");
+async function loadCategories() {
+    const categories = await api("/api/categories");
+    const select = document.getElementById("categorySelect");
+    const list = document.getElementById("categoryList");
+    select.innerHTML = `<option value="">Select category</option>`;
+    list.innerHTML = "";
+    categories.forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+        const li = document.createElement("li");
+        li.textContent = c.name;
+        list.appendChild(li);
+    });
+}
+
+async function loadExpenses() {
+    const rows = await api("/api/expenses");
+    const table = document.getElementById("expenseTableBody");
     table.innerHTML = "";
-    Promise.all([fetch(`/api/categories?userId=${userId}`).then((r) => r.json()), fetch(`/api/expenses?userId=${userId}`).then((r) => r.json())])
-        .then(([categories, data]) => {
-            categoryById = {};
-            categories.forEach((c) => {
-                categoryById[c.id] = c.name;
-            });
-            if (data.length === 0) {
-                table.innerHTML = '<tr><td colspan="4" class="empty">No expenses yet.</td></tr>';
-                return;
-            }
-            data.forEach((e) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td>${escapeHtml(e.date || "—")}</td><td>${escapeHtml(
-                    categoryLabel(e.categoryId)
-                )}</td><td>₹${formatMoney(e.amount)}</td><td>${escapeHtml(e.description || "—")}</td>`;
-                table.appendChild(tr);
-            });
-        })
-        .catch(() => {
-            table.innerHTML = '<tr><td colspan="4" class="empty">Failed to load data.</td></tr>';
-        });
-}
-
-function escapeHtml(s) {
-    const div = document.createElement("div");
-    div.textContent = s;
-    return div.innerHTML;
-}
-
-function formatMoney(n) {
-    if (n == null || Number.isNaN(n)) return "0.00";
-    return Number(n).toFixed(2);
-}
-
-function addCategory() {
-    const name = document.getElementById("catName").value.trim();
-    if (!name) {
-        alert("Enter a category name.");
+    if (!rows.length) {
+        table.innerHTML = `<tr><td colspan="4">No expenses yet.</td></tr>`;
         return;
     }
-    fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, userId }),
-    })
-        .then((res) => {
-            if (!res.ok) throw new Error("fail");
-            return res.json();
-        })
-        .then(() => {
-            document.getElementById("catName").value = "";
-            return refreshCategories();
-        })
-        .then(() => loadCategoryList())
-        .catch(() => alert("Could not add category."));
+    rows.forEach((e) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${e.date || "-"}</td>
+            <td>${e.categoryName || "-"}</td>
+            <td>${money(e.amount)}</td>
+            <td>${(e.description || "-").replace(/</g, "&lt;")}</td>
+        `;
+        table.appendChild(tr);
+    });
 }
 
-function loadCategoryList() {
-    fetch(`/api/categories?userId=${userId}`)
-        .then((r) => r.json())
-        .then((data) => {
-            const ul = document.getElementById("categoryList");
-            ul.innerHTML = "";
-            if (data.length === 0) {
-                ul.innerHTML = "<li class=\"empty-inline\">No categories yet.</li>";
-                return;
-            }
-            data.forEach((c) => {
-                const li = document.createElement("li");
-                li.className = "pill";
-                li.textContent = c.name;
-                ul.appendChild(li);
-            });
-        });
-}
-
-function addBudget() {
-    const month = document.getElementById("month").value;
-    const amountRaw = document.getElementById("budgetAmount").value.trim().replace(/,/g, "");
-    const amount = parseFloat(amountRaw);
-    if (!month || Number.isNaN(amount) || amount < 0) {
-        alert("Set month and a valid amount.");
+async function loadBudgets() {
+    const rows = await api("/api/budget");
+    const list = document.getElementById("budgetList");
+    list.innerHTML = "";
+    if (!rows.length) {
+        list.innerHTML = "<li>No budgets found.</li>";
         return;
     }
-    fetch("/api/budget", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ month, amount, userId }),
-    })
-        .then((res) => {
-            if (!res.ok) throw new Error("fail");
-            return res.json();
-        })
-        .then(() => {
-            document.getElementById("budgetAmount").value = "";
-            setDefaultMonth();
-            loadBudgetList();
-        })
-        .catch(() => alert("Could not save budget."));
+    rows.forEach((b) => {
+        const li = document.createElement("li");
+        li.textContent = `${b.month} : ${money(b.amount)}`;
+        list.appendChild(li);
+    });
 }
 
-function loadBudgetList() {
-    fetch(`/api/budget?userId=${userId}`)
-        .then((r) => r.json())
-        .then((data) => {
-            const ul = document.getElementById("budgetList");
-            ul.innerHTML = "";
-            if (data.length === 0) {
-                ul.innerHTML = "<li class=\"empty-inline\">No budgets yet.</li>";
-                return;
-            }
-            data.forEach((b) => {
-                const li = document.createElement("li");
-                li.textContent = `${b.month}: ₹${formatMoney(b.amount)}`;
-                ul.appendChild(li);
-            });
-        });
+async function loadDashboard() {
+    const month = document.getElementById("budgetMonth").value || currentMonth();
+    const [status, summary] = await Promise.all([
+        api(`/api/expenses/budget-status?month=${month}`),
+        api(`/api/expenses/category-summary?month=${month}`),
+    ]);
+
+    document.getElementById("totalExpenseCard").textContent = money(status.totalExpenses);
+    document.getElementById("budgetCard").textContent = money(status.budget);
+    document.getElementById("remainingCard").textContent = money(status.remainingBudget);
+    document.getElementById("usagePercent").textContent = `${status.percentageUsed.toFixed(2)}%`;
+
+    const percent = Math.min(100, status.percentageUsed);
+    const progress = document.getElementById("usageProgress");
+    progress.style.width = `${percent}%`;
+    progress.style.background = status.budgetExceeded ? "linear-gradient(90deg,#f87171,#dc2626)" : "linear-gradient(90deg,#60a5fa,#2563eb)";
+
+    if (status.budgetExceeded) {
+        warningBanner.classList.remove("hidden");
+        warningBanner.textContent = `⚠ Budget exceeded by ${money(status.exceededBy)} in ${status.month}`;
+    } else {
+        warningBanner.classList.add("hidden");
+        warningBanner.textContent = "";
+    }
+
+    renderCharts(summary);
 }
 
-setDefaultDate();
-setDefaultMonth();
-refreshCategories().then(() => {
-    updateExpenseTotalPreview();
+function renderCharts(summary) {
+    const labels = summary.map((s) => s.category);
+    const values = summary.map((s) => s.totalAmount);
+    const palette = ["#2563eb", "#0ea5e9", "#22c55e", "#f97316", "#8b5cf6", "#ef4444", "#14b8a6", "#eab308"];
+
+    const pieCtx = document.getElementById("pieChart");
+    const barCtx = document.getElementById("barChart");
+
+    if (pieChart) pieChart.destroy();
+    if (barChart) barChart.destroy();
+
+    pieChart = new Chart(pieCtx, {
+        type: "pie",
+        data: {
+            labels,
+            datasets: [{ data: values, backgroundColor: palette }],
+        },
+        options: {
+            plugins: { legend: { position: "bottom" } },
+        },
+    });
+
+    barChart = new Chart(barCtx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{ label: "Amount", data: values, backgroundColor: "#3b82f6", borderRadius: 6 }],
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true },
+            },
+        },
+    });
+}
+
+async function refreshAll() {
+    try {
+        await Promise.all([loadCategories(), loadExpenses(), loadBudgets(), loadDashboard()]);
+    } catch (err) {
+        showToast(err.message || "Something went wrong");
+    }
+}
+
+document.getElementById("loginBtn").addEventListener("click", login);
+document.getElementById("registerBtn").addEventListener("click", register);
+document.getElementById("logoutBtn").addEventListener("click", logout);
+document.getElementById("saveExpenseBtn").addEventListener("click", addExpense);
+document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
+document.getElementById("saveBudgetBtn").addEventListener("click", saveBudget);
+
+document.querySelectorAll(".nav-link").forEach((btn) =>
+    btn.addEventListener("click", () => switchSection(btn.dataset.section))
+);
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".tab-content").forEach((tab) => tab.classList.add("hidden"));
+        document.getElementById(btn.dataset.tab).classList.remove("hidden");
+    });
 });
+
+document.getElementById("budgetMonth").addEventListener("change", loadDashboard);
+
+checkSession();

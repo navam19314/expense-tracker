@@ -1,8 +1,10 @@
 package com.project.expensetracker.controller;
 
-import com.project.expensetracker.model.Budget;
-import com.project.expensetracker.repository.BudgetRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.project.expensetracker.dto.request.BudgetRequest;
+import com.project.expensetracker.dto.response.BudgetResponse;
+import com.project.expensetracker.service.BudgetService;
+import com.project.expensetracker.service.SessionUserService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,20 +12,23 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/budget")
 public class BudgetController {
+    private final BudgetService budgetService;
+    private final SessionUserService sessionUserService;
 
-    @Autowired
-    private BudgetRepository repo;
+    public BudgetController(BudgetService budgetService, SessionUserService sessionUserService) {
+        this.budgetService = budgetService;
+        this.sessionUserService = sessionUserService;
+    }
 
     @PostMapping
-    public Budget add(@RequestBody Budget b) {
-        return repo.save(b);
+    public BudgetResponse add(@RequestBody BudgetRequest request, HttpSession session) {
+        Long userId = sessionUserService.getRequiredUserId(session);
+        return budgetService.save(userId, request);
     }
 
     @GetMapping
-    public List<Budget> getAll(@RequestParam(required = false) Long userId) {
-        if (userId != null) {
-            return repo.findByUserIdOrderByIdDesc(userId);
-        }
-        return repo.findAll();
+    public List<BudgetResponse> getAll(HttpSession session) {
+        Long userId = sessionUserService.getRequiredUserId(session);
+        return budgetService.list(userId);
     }
 }
